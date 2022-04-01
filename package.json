@@ -4,11 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "postinstall": "cd lm-app && npm i && cd ../lm-statics && npm i",
+
     "empty:developpment": "rm -rf dist.developpment/*",
     "empty:production": "rm -rf dist.production/*",
 
-    "copy:developpment": "cp -r src/ dist.developpment && rm dist.developpment/*.ts && rm dist.developpment/**/*.ts",
-    "copy:production": "cp -r src/ dist.production && rm dist.production/*.ts && rm dist.production/**/*.ts",
+    "copy:developpment": "cp -r src/ dist.developpment && find dist.developpment/ -maxdepth 100 -type f -name \"*.ts\" -delete",
+    "copy:production": "cp -r src/ dist.production && find dist.developpment/ -maxdepth 100 -type f -name \"*.ts\" -delete",
 
     "transpile-ts:developpment": "tsc -p ./tsconfig.developpment.json",
     "transpile-ts:production": "tsc -p ./tsconfig.production.json",
@@ -23,9 +25,9 @@
     "serve:developpment:watch": "NODE_ENV=developpment PORT=3000 npx -y nodemon --watch dist.developpment --trace-warnings --experimental-specifier-resolution=node ./dist.developpment/index.js",
     "serve:production:watch": "NODE_ENV=production PORT=3000 npx -y nodemon --watch dist.production --trace-warnings --experimental-specifier-resolution=node ./dist.production/index.js",
 
-    "dev": "npx concurrently 'npm run transpile-all:developpment' 'npm run serve:developpment'",
-    "dev:watch": "npx concurrently 'npm run transpile-all:developpment:watch' 'npm run serve:developpment:watch'",
-    "prod": "npx concurrently 'npm run transpile-all:production' 'npm run serve:production'",
+    "dev": "npx concurrently -n 'transpile,serve----' 'npm run transpile-all:developpment' 'npm run serve:developpment'",
+    "dev:watch": "npx concurrently -n 'transpile,serve----' 'npm run transpile-all:developpment:watch' 'npm run serve:developpment:watch'",
+    "prod": "npx concurrently -n 'transpile,serve----' 'npm run transpile-all:production' 'npm run serve:production'",
 
     "start": "npm run dev:watch"
   },
