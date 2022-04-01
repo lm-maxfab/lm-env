@@ -1,7 +1,7 @@
 .DS_Store
 node_modules
-dist/dev
-dist/prod
+dist
+.temp
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/node,windows,linux,osx,macos
