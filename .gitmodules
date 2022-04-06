@@ -1,6 +1,8 @@
 [submodule "lm-app"]
 	path = lm-app
 	url = https://github.com/lm-maxfab/lm-app
+	update = merge
 [submodule "lm-statics"]
 	path = lm-statics
 	url = https://github.com/lm-maxfab/lm-statics
+	update = merge
