@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "init": "git submodule init && git submodule update --remote --merge",
-    "postinstall": "cd lm-app && npm i && cd ../lm-statics && npm i",
+    "preinstall": "git submodule update --init --remote --merge",
+    "postinstall": "cd lm-app && git switch master && npm i && cd ../lm-statics && git switch master && npm i",
     "env:build:dev": "node ./scripts/env.build.dev.js",
     "env:build:watch:dev": "node ./scripts/env.build.watch.dev.js",
     "env:serve:dev": "node ./scripts/env.serve.dev.js",
