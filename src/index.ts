@@ -8,6 +8,7 @@ import http from 'http'
 import config from './config'
 
 import indexRouter from './routes/index'
+import staticsRouter from './routes/statics'
 
 init()
 
@@ -27,6 +28,7 @@ async function init () {
 
   /* Public routes */
   app.use('/', indexRouter)
+  app.use('/statics', staticsRouter)
 
   /* Create HTTP server */
   const server = http.createServer(app)

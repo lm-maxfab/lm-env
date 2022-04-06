@@ -1,39 +1,55 @@
-import execAsync from './utils/exec-async/index.js'
-import { v4 as uuid } from 'uuid'
-import chalk from 'chalk'
-import dircompare from 'dir-compare'
 import path from 'path'
-import deepLs from './utils/deep-ls/index.js'
 import fse from 'fs-extra'
+import chalk from 'chalk'
+import { v4 as uuid } from 'uuid'
+import dircompare from 'dir-compare'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 import { JSDOM } from 'jsdom'
 import sass from 'sass'
 import CleanCSS from 'clean-css'
-import buildConfig from './statics.build.dev.config.js'
+
+import execAsync from './utils/exec-async/index.js'
+import deepLs from './utils/deep-ls/index.js'
+
+import MASTER_CONFIG from '../build.config.js'
 
 /* * * * * * * * * * * * * * * * * * * * * *
  *
- * CONFIG
+ * INIT
  * 
  * * * * * * * * * * * * * * * * * * * * * */
+const startTime = Date.now()
+
+const STATICS_CONFIG = MASTER_CONFIG.statics
+const THIS_BUILD_CONFIG = STATICS_CONFIG.builds.find(conf => conf.name === 'dev')
+
 const __dirname = process.cwd()
 
-const srcFolderPath = path.join(__dirname, 'lm-statics/src')
+const tempDirRelPath = MASTER_CONFIG.temp.rel_path
 
-const prevBuildableSourceDirName = 'statics-dev-source-reference'
-const prevBuildableSourceDirRelPath = `.temp/${prevBuildableSourceDirName}`
+const srcDirRelPath = STATICS_CONFIG.src_rel_path
+const srcDirPath = path.join(__dirname, srcDirRelPath)
+
+const prevBuildableSourceDirName = THIS_BUILD_CONFIG.temp_source_reference_dir_name
+const prevBuildableSourceDirRelPath = `${tempDirRelPath}/${prevBuildableSourceDirName}`
 const prevBuildableSourceDirPath = path.join(__dirname, prevBuildableSourceDirRelPath)
 
-const fullSourceCopyDirName = `statics-dev-source-copy-${Date.now()}-${uuid().replace(/-[a-f0-9-]*$/igm, '')}`
-const fullSourceCopyDirRelPath = `.temp/${fullSourceCopyDirName}`
+const prevBuiltOutputDirName = THIS_BUILD_CONFIG.temp_build_reference_dir_name
+const prevBuiltOutputDirRelPath = `${tempDirRelPath}/${prevBuiltOutputDirName}`
+const prevBuiltOutputDirPath = path.join(__dirname, prevBuiltOutputDirRelPath)
+
+const fullSourceCopyDirNamePrefix = THIS_BUILD_CONFIG.temp_source_copy_dir_name_prefix
+const fullSourceCopyDirName = `${fullSourceCopyDirNamePrefix}-${Date.now()}-${uuid().replace(/-[a-f0-9-]*$/igm, '')}`
+const fullSourceCopyDirRelPath = `${tempDirRelPath}/${fullSourceCopyDirName}`
 const fullSourceCopyDirPath = path.join(__dirname, fullSourceCopyDirRelPath)
 
-const diffedSourceDirName = `statics-dev-source-diff-to-ref-${Date.now()}-${uuid().replace(/-[a-f0-9-]*$/igm, '')}`
-const diffedSourceDirRelPath = `.temp/${diffedSourceDirName}`
+const diffedSourceDirNamePrefix = THIS_BUILD_CONFIG.temp_source_diff_dir_name_prefix
+const diffedSourceDirName = `${diffedSourceDirNamePrefix}-${Date.now()}-${uuid().replace(/-[a-f0-9-]*$/igm, '')}`
+const diffedSourceDirRelPath = `${tempDirRelPath}/${diffedSourceDirName}`
 const diffedSourceDirPath = path.join(__dirname, diffedSourceDirRelPath)
 
-const distDirRelPath = 'dist/dev/statics'
+const distDirRelPath = THIS_BUILD_CONFIG.build_output_rel_path
 const distDirPath = path.join(__dirname, distDirRelPath)
 
 async function cleanup (path) {
@@ -54,6 +70,7 @@ async function handleProcessInterruption (reason, fullSourceCopyDirPath, diffedS
   console.log(chalk.white.bgRed.bold(reason))
   await cleanup(fullSourceCopyDirPath)
   await cleanup(diffedSourceDirPath)
+  console.log(chalk.grey('cleaned up after handling exception.'))
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
@@ -66,6 +83,18 @@ try {
   console.log(chalk.bold(`Ensuring ${prevBuildableSourceDirRelPath} exists...`))
   try {
     const { err, stderr } = await execAsync(`mkdir -p ${prevBuildableSourceDirPath}`)
+    if (err) throw new Error(err)
+    if (stderr) throw new Error(stderr)
+    console.log(chalk.grey(`exists.`))
+  } catch (err) {
+    console.log(err)
+    throw new Error(err)
+  }
+
+  // Create built reference directory if needed
+  console.log(chalk.bold(`Ensuring ${prevBuiltOutputDirRelPath} exists...`))
+  try {
+    const { err, stderr } = await execAsync(`mkdir -p ${prevBuiltOutputDirPath}`)
     if (err) throw new Error(err)
     if (stderr) throw new Error(stderr)
     console.log(chalk.grey(`exists.`))
@@ -113,7 +142,7 @@ try {
   // Copy source in temp and delete all .DS_Store files
   console.log(chalk.bold(`Copying source files to ${fullSourceCopyDirRelPath}, deleting all .DS_Store...`))
   try {
-    const { err, stderr } = await execAsync(`cp -r ${srcFolderPath}/ ${fullSourceCopyDirPath} && find ${fullSourceCopyDirPath}/ -maxdepth 100 -type f -name \".DS_Store\" -delete`)
+    const { err, stderr } = await execAsync(`cp -r ${srcDirPath}/ ${fullSourceCopyDirPath} && find ${fullSourceCopyDirPath}/ -maxdepth 100 -type f -name \".DS_Store\" -delete`)
     if (err) throw new Error(err)
     if (stderr) throw new Error(stderr)
     console.log(chalk.grey(`copied and cleaned.`))
@@ -155,7 +184,8 @@ try {
         console.log(err)
       }
     }
-
+    
+    console.log(chalk.grey('pushed.'))
   } catch (err) {
     console.log(err)
     throw new Error(err)
@@ -166,6 +196,10 @@ try {
   try {
     const filePaths = await deepLs(diffedSourceDirPath)
     for (const filePath of filePaths) {
+      const fileExt = path.extname(filePath)
+      const shouldReplace = STATICS_CONFIG.templating_allowed_extensions.includes(fileExt)
+      if (!shouldReplace) continue
+
       const fileRelPathFromDiffedSourceDir = path.relative(diffedSourceDirPath, filePath)
       const fileContent = await fse.readFile(filePath, 'utf-8')
       let newFileContent = fileContent
@@ -178,7 +212,7 @@ try {
         const newLines = fileLines.filter(fileLine => {
           const hasLineKeep = fileLine.match(lineKeepRegexp)
           if (!hasLineKeep) return true
-          const shouldKeep = fileLine.match(new RegExp(`\{\{LINE_KEEP:${buildConfig.build_name}\}\}`, 'gm'))
+          const shouldKeep = fileLine.match(new RegExp(`\{\{LINE_KEEP:${THIS_BUILD_CONFIG.name}\}\}`, 'gm'))
           if (shouldKeep) return true
           return false
         })
@@ -193,7 +227,7 @@ try {
         const newLines = fileLines.filter(fileLine => {
           const hasLineStrip = fileLine.match(lineStripRegexp)
           if (!hasLineStrip) return true
-          const shouldStrip = fileLine.match(new RegExp(`\{\{LINE_STRIP:${buildConfig.build_name}\}\}`, 'gm'))
+          const shouldStrip = fileLine.match(new RegExp(`\{\{LINE_STRIP:${THIS_BUILD_CONFIG.name}\}\}`, 'gm'))
           if (shouldStrip) return false
           return true
         })
@@ -201,16 +235,17 @@ try {
       }
 
       // {{ROOT_URL}}
-      const rootUrl = buildConfig.root_url
-      newFileContent = newFileContent.replace(new RegExp(buildConfig.ROOT_URL_TEMPLATE, 'gm'), rootUrl)
+      const rootUrl =  THIS_BUILD_CONFIG.root_url
+      const rootUrlTemplateRegexp = new RegExp(STATICS_CONFIG.root_url_template, 'gm')
+      newFileContent = newFileContent.replace(rootUrlTemplateRegexp, rootUrl)
       
       // {{THIS_URL}}
       const thisUrl = `${rootUrl}/${fileRelPathFromDiffedSourceDir}`
-      newFileContent = newFileContent.replace(new RegExp(buildConfig.THIS_URL_TEMPLATE, 'gm'), thisUrl)
+      newFileContent = newFileContent.replace(new RegExp(STATICS_CONFIG.this_url_template, 'gm'), thisUrl)
       
       // {{PARENT_URL}}
       const parentUrl = `${rootUrl}/${path.join(fileRelPathFromDiffedSourceDir, '..').replace(/^\.$/gm, '')}`
-      newFileContent = newFileContent.replace(new RegExp(buildConfig.PARENT_URL_TEMPLATE, 'gm'), parentUrl)
+      newFileContent = newFileContent.replace(new RegExp(STATICS_CONFIG.parent_url_template, 'gm'), parentUrl)
 
       if (newFileContent !== fileContent) await fse.writeFile(filePath, newFileContent)
     }
@@ -231,8 +266,12 @@ try {
       const fileRelPath = path.relative(diffedSourceDirPath, filePath)
       const fileRelPathArr = fileRelPath.split('/')
       const breadcrumb = fileRelPathArr.map((chunk, pos) => {
-        const currRelPath = fileRelPathArr.slice(0, pos + 1).join('/')
-        return `[${chunk}](${buildConfig.root_url}/${currRelPath})`
+        const currRelPath = fileRelPathArr
+          .slice(0, pos + 1)
+          .join('/')
+          .replace(/README.md/gm, 'README.html')
+        const currFileName = chunk.replace(/README.md/gm, 'README.html')
+        return `[${currFileName}](${THIS_BUILD_CONFIG.root_url}/${currRelPath})`
       }).join('/') + '\n'
       const fileContent = await fse.readFile(filePath, 'utf-8')
       const htmlContent = marked.parse(breadcrumb + fileContent, {
@@ -252,9 +291,9 @@ try {
           h1 { font-family: "Marr-Sans-Condensed"; font-size: 3em; }
           p { font-family: "The-Antiqua-B"; }
         </style>
-        <link rel="stylesheet" href="${buildConfig.root_url}/styles/fonts.css">
-        <link rel="stylesheet" href="${buildConfig.root_url}/styles/variables.css">
-        <link rel="stylesheet" href="${buildConfig.root_url}/lib/highlightjs/v11.5.0/material-palenight.min.css">`
+        ${THIS_BUILD_CONFIG.readme_markdown_html_stylesheets_paths.map(cssPath => {
+          return `<link rel="stylesheet" href="${cssPath}">`
+        }).join('')}`
       $htmlJsdom.window.document.body.classList.add('lm-page')
       const newHtmlContent = $htmlJsdom.window.document.documentElement.outerHTML
       await fse.writeFile(
@@ -300,7 +339,7 @@ try {
       const compiled = sass.compile(filePath).css
       const minified = new CleanCSS({}).minify(compiled)
       await fse.writeFile(outPath, minified.styles, 'utf-8')
-      await fse.rm(fileData.path)
+      await fse.rm(filePath)
     }
 
     console.log(chalk.grey('compiled.'))
@@ -310,19 +349,55 @@ try {
   }
 
   // Minify CSS
-  // if (fileData.extension === '.css') {
-  //   const minified = new CleanCSS({}).minify(fileData.content)
-  //   await fse.writeFile(fileData.path, minified.styles, 'utf-8')
-  // }
+  console.log(chalk.bold('Minifying CSS files...'))
+  try {
+    const filePaths = await deepLs(diffedSourceDirPath)
+    const cssFilesPaths = filePaths.filter(filePath => path.extname(filePath) === '.css')
 
+    for (const filePath of cssFilesPaths) {
+      const contents = await fse.readFile(filePath)
+      const minified = new CleanCSS({}).minify(contents)
+      await fse.writeFile(filePath, minified.styles, 'utf-8')
+    }
+    
+    console.log(chalk.grey('minified.'))
+  } catch (err) {
+    console.log(err)
+    throw new Error(err)
+  }
+
+  // Rsync diff to dist
+  console.log(chalk.bold(`Rsync ${diffedSourceDirRelPath} to ${distDirRelPath}`))
+  try {
+    await execAsync(`rsync --archive --verbose ${diffedSourceDirPath}/ ${distDirPath}`)
+    console.log(chalk.grey('rsynced.'))
+  } catch (err) {
+    console.log(err)
+    throw new Error(err)
+  }
+
+  // Update source reference and build reference
+  console.log(chalk.bold(`Updating contents of ${prevBuildableSourceDirRelPath} and ${prevBuiltOutputDirRelPath}...`))
+  try {
+    await execAsync(`rm -rf ${prevBuildableSourceDirPath} && mv ${fullSourceCopyDirPath} ${prevBuildableSourceDirPath}`)
+    await execAsync(`rm -rf ${prevBuiltOutputDirPath} && cp -r ${distDirPath} ${prevBuiltOutputDirPath}`)
+    console.log(chalk.grey('updated.'))
+  } catch (err) {
+    console.log(err)
+    throw new Error(err)
+  }
 
   // Remove temp directory
-  // console.log(chalk.bold(`Removing ${fullSourceCopyDirPath} and ${diffedSourceDirPath}...`))
-  // await cleanup(fullSourceCopyDirPath)
-  // await cleanup(diffedSourceDirPath)
-  // console.log(chalk.grey(`removed ${fullSourceCopyDirPath} and ${diffedSourceDirPath}.`))
+  console.log(chalk.bold(`Removing ${fullSourceCopyDirRelPath} and ${diffedSourceDirRelPath}...`))
+  await cleanup(fullSourceCopyDirPath)
+  await cleanup(diffedSourceDirPath)
+  console.log(chalk.grey(`removed.`))
+
+  // Done
+  console.log(chalk.bgGreen.bold(`Built in ${(Date.now() - startTime) / 1000} seconds.`))
 
 } catch (err) {
   await cleanup(fullSourceCopyDirPath)
+  await cleanup(diffedSourceDirPath)
   throw new Error(err)
 }

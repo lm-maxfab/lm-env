@@ -7,12 +7,19 @@
     "init": "git submodule init && git submodule update",
     "postinstall": "cd lm-app && npm i && cd ../lm-statics && npm i",
     "env:build:dev": "node ./scripts/env.build.dev.js",
-    "env:serve:dev": "NODE_ENV=developpment PORT=3000 node --trace-warnings --experimental-specifier-resolution=node ./dist/dev/env/index.js",
-    "env:start:dev": "npx concurrently -n 'env:build:dev,env:serve:dev' 'npm run env:build:dev' 'npm run env:serve:dev'",
     "env:build:watch:dev": "node ./scripts/env.build.watch.dev.js",
-    "env:serve:watch:dev": "NODE_ENV=developpment PORT=3000 npx -y nodemon --watch dist/dev/env --trace-warnings --experimental-specifier-resolution=node ./dist/dev/env/index.js",
+    "env:serve:dev": "node ./scripts/env.serve.dev.js",
+    "env:serve:watch:dev": "node ./scripts/env.serve.watch.dev.js",
+    "env:start:dev": "npx concurrently -n 'env:build:dev,env:serve:dev' 'npm run env:build:dev' 'npm run env:serve:dev'",
     "env:start:watch:dev": "npx concurrently -n 'env:build:watch:dev,env:serve:watch:dev' 'npm run env:build:watch:dev' 'npm run env:serve:watch:dev'",
-    "statics:build:dev": "node ./scripts/statics.build.dev.js"
+    "statics:clear-cache:dev": "node ./scripts/statics.clear-cache.dev.js",
+    "statics:build:dev": "node ./scripts/statics.build.dev.js",
+    "statics:build:watch:dev": "node ./scripts/statics.build.watch.dev.js",
+    "statics:serve:dev": "node ./scripts/statics.serve.dev.js",
+    "statics:serve:watch:dev": "node ./scripts/statics.serve.watch.dev.js",
+    "statics:start:dev": "npx concurrently -n 'statics:build:dev,statics:serve:dev' 'npm run statics:build:dev' 'npm run statics:serve:dev'",
+    "statics:start:watch:dev": "npx concurrently -n 'statics:build:watch:dev,statics:serve:watch:dev' 'npm run statics:build:watch:dev' 'npm run statics:serve:watch:dev'",
+    "dev": "npx concurrently --raw 'npm run env:start:watch:dev' 'npm run statics:start:watch:dev'"
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",
@@ -20,12 +27,14 @@
     "express": "~4.16.1",
     "http-errors": "~1.6.3",
     "morgan": "~1.9.1",
+    "node-fetch": "^3.2.3",
     "pug": "^3.0.2"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.2",
     "@types/debug": "^4.1.7",
     "@types/express": "^4.17.13",
+    "@types/express-http-proxy": "^1.6.3",
     "@types/morgan": "^1.9.3",
     "@types/node": "^17.0.22",
     "chalk": "^5.0.1",
