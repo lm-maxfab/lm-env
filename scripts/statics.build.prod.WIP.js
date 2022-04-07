@@ -24,7 +24,7 @@ import MASTER_CONFIG from '../build.config.js'
 const startTime = Date.now()
 
 const STATICS_CONFIG = MASTER_CONFIG.statics
-const THIS_BUILD_CONFIG = STATICS_CONFIG.builds.find(conf => conf.name === 'dev')
+const THIS_BUILD_CONFIG = STATICS_CONFIG.builds.find(conf => conf.name === 'prod')
 
 const __dirname = process.cwd()
 

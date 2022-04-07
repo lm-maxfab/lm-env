@@ -18,7 +18,7 @@ const args = [
 const env = {
   ...process.env,
   NODE_ENV: 'developpment',
-  PORT: `${THIS_BUILD_CONFIG.root_url_port}`
+  PORT: `${THIS_BUILD_CONFIG.local_server_port}`
 }
 
 const server = spawn(command, args, { env })

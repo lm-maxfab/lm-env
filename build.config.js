@@ -24,7 +24,7 @@ const envConfig = {
   src_rel_path: 'src',
   builds: [{
     name: 'dev',
-    root_url_port: '3000',
+    local_server_port: '3000',
     temp_source_copy_dir_name_prefix: 'env-dev-source-copy',
     build_output_rel_path: 'dist/dev/env',
     source_watched_extensions: allExtensions,
@@ -46,7 +46,7 @@ const staticsConfig = {
   ],
   builds: [{
     name: 'dev',
-    root_url_port: '3001',
+    local_server_port: '3001',
     root_url: 'http://localhost:3001',
     build_output_rel_path: 'dist/dev/statics',
     temp_source_copy_dir_name_prefix: 'statics-dev-source-copy',
@@ -57,6 +57,29 @@ const staticsConfig = {
       'http://localhost:3001/styles/fonts.css',
       'http://localhost:3001/styles/variables.css',
       'http://localhost:3001/lib/highlightjs/v11.5.0/material-palenight.min.css'
+    ],
+    aliases: {
+      '/le-monde/styles/reset.css': '/styles/reset.css'
+    },
+    source_watched_extensions: allExtensions,
+    build_watched_extensions: allExtensions,
+    js_uglification_skip_paths: [
+      '/lib',
+      '/utils/le-monde-page-templates'
+    ]
+  }, {
+    name: 'prod',
+    local_server_port: '3001',
+    root_url: 'https://assets-decodeurs.lemonde.fr/redacweb/statics',
+    build_output_rel_path: 'dist/prod/statics',
+    temp_source_copy_dir_name_prefix: 'statics-prod-source-copy',
+    temp_source_reference_dir_name: 'statics-prod-source-reference',
+    temp_source_diff_dir_name_prefix: 'statics-prod-source-diff',
+    temp_build_reference_dir_name: 'statics-prod-build-reference',
+    readme_markdown_html_stylesheets_paths: [
+      'https://assets-decodeurs.lemonde.fr/redacweb/statics/styles/fonts.css',
+      'https://assets-decodeurs.lemonde.fr/redacweb/statics/styles/variables.css',
+      'https://assets-decodeurs.lemonde.fr/redacweb/statics/lib/highlightjs/v11.5.0/material-palenight.min.css'
     ],
     aliases: {
       '/le-monde/styles/reset.css': '/styles/reset.css'

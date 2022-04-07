@@ -13,12 +13,14 @@
     "env:start:dev": "npx concurrently -n 'env----:build:dev,env----:serve:dev' 'npm run env:build:dev' 'npm run env:serve:dev'",
     "env:start:watch:dev": "npx concurrently -n 'env----:build:watch:dev,env----:serve:watch:dev' 'npm run env:build:watch:dev' 'npm run env:serve:watch:dev'",
     "statics:clear-cache:dev": "node ./scripts/statics.clear-cache.dev.js",
+    "statics:clear-cache:prod:WIP": "node ./scripts/statics.clear-cache.prod.WIP.js",
     "statics:build:dev": "node ./scripts/statics.build.dev.js",
+    "statics:build:prod:WIP": "node ./scripts/statics.build.prod.WIP.js",
     "statics:build:watch:dev": "node ./scripts/statics.build.watch.dev.js",
     "statics:serve:dev": "node ./scripts/statics.serve.dev.js",
     "statics:serve:watch:dev": "node ./scripts/statics.serve.watch.dev.js",
     "statics:start:dev": "npx concurrently -n 'statics:build:dev,statics:serve:dev' 'npm run statics:build:dev' 'npm run statics:serve:dev'",
-    "statics:start:watch:dev": "npx concurrently -n 'statics:build:watch:dev,statics:serve:watch:dev' 'npm run statics:build:watch:dev' 'npm run statics:serve:watch:dev'",
+    "statics:start:watch:dev": "npx concurrently -n 'statics:build:watch:dev,statics:serve:dev------' 'npm run statics:build:watch:dev' 'npm run statics:serve:dev'",
     "dev": "npx concurrently --raw 'npm run env:start:watch:dev' 'npm run statics:start:watch:dev'"
   },
   "dependencies": {

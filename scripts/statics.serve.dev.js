@@ -14,7 +14,7 @@ const args = [
   '-y',
   'http-server',
   '--cors',
-  `-p ${THIS_BUILD_CONFIG.root_url_port}`,
+  `-p ${THIS_BUILD_CONFIG.local_server_port}`,
   `${distDirPath}`
 ]
 
