@@ -8,9 +8,11 @@ import hljs from 'highlight.js'
 import { JSDOM } from 'jsdom'
 import sass from 'sass'
 import CleanCSS from 'clean-css'
+import uglifyJs from 'uglify-js'
 
 import execAsync from './utils/exec-async/index.js'
 import deepLs from './utils/deep-ls/index.js'
+import isPathInScope from './utils/is-path-in-scope/index.js'
 
 import MASTER_CONFIG from '../build.config.js'
 
@@ -310,30 +312,49 @@ try {
     throw new Error(err)
   }
 
-  // Transpile TypeScript
+  // Transpile Typescript
   console.log(chalk.bold('Transpiling Typescript files...'))
   try {
     const filePaths = await deepLs(diffedSourceDirPath)
     const tsFilesPaths = filePaths.filter(filePath => path.extname(filePath) === '.ts')
-    
     for (const filePath of tsFilesPaths) {
       const outPath = filePath.replace(/\.ts$/gm, '.js')
       await execAsync(`tsc ${filePath} --outFile ${outPath} --target es2015`)
       await fse.remove(filePath)
     }
-
     console.log(chalk.grey('transpiled.'))
   } catch (err) {
     console.log(err)
     throw new Error(err)
   }
 
+  // Uglify Javascript
+  console.log(chalk.bold('Uglifying Javascript files...'))
+  try {
+    const filePaths = await deepLs(diffedSourceDirPath)
+    const jsFilesPaths = filePaths.filter(filePath => path.extname(filePath) === '.js')
+    const skippedPaths = THIS_BUILD_CONFIG.js_uglification_skip_paths.map(skipPath => {
+      return path.join(diffedSourceDirPath, skipPath)
+    })
+    for (const filePath of jsFilesPaths) {
+      const shouldSkip = skippedPaths.some(skippedPath => isPathInScope(filePath, skippedPath))
+      if (shouldSkip) continue
+      const fileContent = await fse.readFile(filePath, 'utf-8')
+      const uglified = uglifyJs.minify(fileContent).code
+      await fse.writeFile(filePath, uglified, { encoding: 'utf-8' })
+    }
+    console.log(chalk.grey('uglified.'))
+  } catch (err) {
+    console.log(err)
+    throw new Error(err)
+  }
+
+
   // Compile SASS
   console.log(chalk.bold('Compiling SCSS files...'))
   try {
     const filePaths = await deepLs(diffedSourceDirPath)
     const scssFilesPaths = filePaths.filter(filePath => path.extname(filePath) === '.scss')
-    
     for (const filePath of scssFilesPaths) {
       const outPath = filePath.replace(/\.scss$/gm, '.css')
       const compiled = sass.compile(filePath).css
@@ -341,7 +362,6 @@ try {
       await fse.writeFile(outPath, minified.styles, 'utf-8')
       await fse.rm(filePath)
     }
-
     console.log(chalk.grey('compiled.'))
   } catch (err) {
     console.log(err)
@@ -353,13 +373,11 @@ try {
   try {
     const filePaths = await deepLs(diffedSourceDirPath)
     const cssFilesPaths = filePaths.filter(filePath => path.extname(filePath) === '.css')
-
     for (const filePath of cssFilesPaths) {
       const contents = await fse.readFile(filePath)
       const minified = new CleanCSS({}).minify(contents)
       await fse.writeFile(filePath, minified.styles, 'utf-8')
     }
-    
     console.log(chalk.grey('minified.'))
   } catch (err) {
     console.log(err)
@@ -371,6 +389,36 @@ try {
   try {
     await execAsync(`rsync --archive --verbose ${diffedSourceDirPath}/ ${distDirPath}`)
     console.log(chalk.grey('rsynced.'))
+  } catch (err) {
+    console.log(err)
+    throw new Error(err)
+  }
+
+  // Create aliases
+  console.log(chalk.bold(`Creating aliases in ${distDirRelPath}`))
+  try {
+    const { aliases } = THIS_BUILD_CONFIG
+    for (const [relTo, relFrom] of Object.entries(aliases)) {
+      const to = path.join(distDirPath, relTo)
+      const from = path.join(distDirPath, relFrom)
+      try {
+        await fse.access(from)
+      } catch (err) {
+        console.error(`Could not create alias from ${from} because this path does not exist.`)
+        continue
+      }
+      if (!isPathInScope(from, distDirRelPath)) {
+        console.error(`Could not create alias from ${from} because this path is out of build scope.`)
+        continue
+      }
+      if (!isPathInScope(to, distDirRelPath)) {
+        console.error(`Could not create alias at ${to} because this path is out of build scope.`)
+        continue
+      }
+      await execAsync(`cp ${from} ${to}`)
+    }
+
+    console.log(chalk.grey('created.'))
   } catch (err) {
     console.log(err)
     throw new Error(err)

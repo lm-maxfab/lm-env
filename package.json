@@ -10,8 +10,8 @@
     "env:build:watch:dev": "node ./scripts/env.build.watch.dev.js",
     "env:serve:dev": "node ./scripts/env.serve.dev.js",
     "env:serve:watch:dev": "node ./scripts/env.serve.watch.dev.js",
-    "env:start:dev": "npx concurrently -n 'env:build:dev,env:serve:dev' 'npm run env:build:dev' 'npm run env:serve:dev'",
-    "env:start:watch:dev": "npx concurrently -n 'env:build:watch:dev,env:serve:watch:dev' 'npm run env:build:watch:dev' 'npm run env:serve:watch:dev'",
+    "env:start:dev": "npx concurrently -n 'env----:build:dev,env----:serve:dev' 'npm run env:build:dev' 'npm run env:serve:dev'",
+    "env:start:watch:dev": "npx concurrently -n 'env----:build:watch:dev,env----:serve:watch:dev' 'npm run env:build:watch:dev' 'npm run env:serve:watch:dev'",
     "statics:clear-cache:dev": "node ./scripts/statics.clear-cache.dev.js",
     "statics:build:dev": "node ./scripts/statics.build.dev.js",
     "statics:build:watch:dev": "node ./scripts/statics.build.watch.dev.js",
@@ -47,6 +47,7 @@
     "nodemon": "^2.0.15",
     "sass": "^1.49.11",
     "typescript": "^4.6.2",
+    "uglify-js": "^3.15.3",
     "uuid": "^8.3.2"
   }
 }

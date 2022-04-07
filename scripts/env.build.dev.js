@@ -1,10 +1,11 @@
 import path from 'path'
 import chalk from 'chalk'
 import { v4 as uuid } from 'uuid'
-
 import execAsync from './utils/exec-async/index.js'
-
 import MASTER_CONFIG from '../build.config.js'
+
+const ENV_CONFIG = MASTER_CONFIG.env
+const THIS_BUILD_CONFIG = ENV_CONFIG.builds.find(conf => conf.name === 'dev')
 
 /* * * * * * * * * * * * * * * * * * * * * *
  *
@@ -12,9 +13,6 @@ import MASTER_CONFIG from '../build.config.js'
  * 
  * * * * * * * * * * * * * * * * * * * * * */
 const startTime = Date.now()
-
-const ENV_CONFIG = MASTER_CONFIG.env
-const THIS_BUILD_CONFIG = ENV_CONFIG.builds.find(conf => conf.name === 'dev')
 
 const __dirname = process.cwd()
 

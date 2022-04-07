@@ -13,12 +13,12 @@ const distDirPath = path.join(__dirname, distDirRelPath)
 nodemon({
   script: 'scripts/env.serve.dev.js',
   watch: distDirPath,
-  ext: 'txt,md,html,pug,css,scss,js,ts,json,jpg,jpeg,png,gif,svg',
+  ext: THIS_BUILD_CONFIG.build_watched_extensions.join(','),
   delay: '200'
 }).on('start', () => {
   console.log(chalk.bgBlack.white.bold(`ENV SERVE: nodemon watches ${distDirRelPath}/`))
 }).on('restart', () => {
-  console.log(chalk.bgBlack.white.bold('ENV SERVE: restarts'))
+  console.log(chalk.bgBlack.white.bold('ENV SERVE: nodemon restarts'))
 }).on('crash', () => {
-  console.log(chalk.bold.bgRed('ENV SERVE: crashed'))
+  console.log(chalk.bold.bgRed('ENV SERVE: nodemon crashed'))
 })

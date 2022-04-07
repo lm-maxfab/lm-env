@@ -13,13 +13,12 @@ const distDirPath = path.join(__dirname, distDirRelPath)
 nodemon({
   script: 'scripts/statics.serve.dev.js',
   watch: distDirPath,
-  ext: 'txt,md,html,pug,css,scss,js,ts,json,jpg,jpeg,png,gif,svg',
+  ext: THIS_BUILD_CONFIG.build_watched_extensions.join(','),
   delay: '200'
 }).on('start', () => {
   console.log(chalk.bgBlack.white.bold(`STATICS SERVE: nodemon watches ${distDirRelPath}/`))
-}).on('restart', files => {
-  console.log(chalk.bgBlack.white.bold('STATICS SERVE: nodemon restarts due to a change in:'))
-  console.log(chalk.grey(files.join('\n')))
+}).on('restart', () => {
+  console.log(chalk.bgBlack.white.bold('STATICS SERVE: nodemon restarts'))
 }).on('crash', () => {
   console.log(chalk.bold.white.bgRed('STATICS SERVE: nodemon crashed'))
 })
