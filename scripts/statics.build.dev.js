@@ -319,7 +319,18 @@ try {
     const tsFilesPaths = filePaths.filter(filePath => path.extname(filePath) === '.ts')
     for (const filePath of tsFilesPaths) {
       const outPath = filePath.replace(/\.ts$/gm, '.js')
-      await execAsync(`tsc ${filePath} --outFile ${outPath} --target es2015`)
+      const { stdout, stderr, err } = await execAsync(`tsc ${filePath} --outFile ${outPath} --target es2015 --sourceMap`)
+      if (err) {
+        console.log(chalk.bgRed('ERR:'))
+        console.log(chalk.red(err))
+      }
+      if (stderr) {
+        console.log(chalk.bgRed('STDERR:'))
+        console.log(chalk.red(err))
+      }
+      if (stdout) {
+        console.log(chalk.grey(stdout))
+      }
       await fse.remove(filePath)
     }
     console.log(chalk.grey('transpiled.'))
