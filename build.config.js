@@ -34,6 +34,7 @@ const envConfig = {
 
 const staticsConfig = {
   src_rel_path: 'lm-statics/src',
+  types_rel_path_from_src: 'types',
   root_url_template: '{{ROOT_URL}}',
   this_url_template: '{{THIS_URL}}',
   parent_url_template: '{{PARENT_URL}}',

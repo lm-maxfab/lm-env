@@ -51,6 +51,10 @@ const diffedSourceDirName = `${diffedSourceDirNamePrefix}-${Date.now()}-${uuid()
 const diffedSourceDirRelPath = `${tempDirRelPath}/${diffedSourceDirName}`
 const diffedSourceDirPath = path.join(__dirname, diffedSourceDirRelPath)
 
+const typesDirRelPathFromSrc = STATICS_CONFIG.types_rel_path_from_src
+const typesInSourceCopyPath = path.join(fullSourceCopyDirPath, typesDirRelPathFromSrc)
+const typesInDiffedSourcePath = path.join(diffedSourceDirPath, typesDirRelPathFromSrc)
+
 const distDirRelPath = THIS_BUILD_CONFIG.build_output_rel_path
 const distDirPath = path.join(__dirname, distDirRelPath)
 
@@ -154,7 +158,7 @@ try {
   }
 
   // Push diff between source and prev build source in diffedSource
-  console.log(chalk.bold('Pushing diff...'))
+  console.log(chalk.bold(`Pushing diff in ${diffedSourceDirRelPath}...`))
   console.log(`  from: ${fullSourceCopyDirRelPath}`)
   console.log(`  and:  ${prevBuildableSourceDirRelPath}`)
   console.log(`  to:   ${diffedSourceDirRelPath}`)
@@ -187,6 +191,16 @@ try {
       }
     }
     
+    console.log(chalk.grey('pushed.'))
+  } catch (err) {
+    console.log(err)
+    throw new Error(err)
+  }
+
+  // Push types in diffedSource
+  console.log(chalk.bold(`Pushing types in diff in ${diffedSourceDirRelPath}...`))
+  try {
+    await execAsync(`cp -r ${typesInSourceCopyPath} ${typesInDiffedSourcePath}`)
     console.log(chalk.grey('pushed.'))
   } catch (err) {
     console.log(err)
