@@ -326,7 +326,7 @@ try {
     throw new Error(err)
   }
 
-  // Transpile Typescript
+  // Transpile Typescript (.ts) files
   console.log(chalk.bold('Transpiling Typescript files...'))
   try {
     const filePaths = await deepLs(diffedSourceDirPath)
