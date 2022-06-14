@@ -51,10 +51,6 @@ const diffedSourceDirName = `${diffedSourceDirNamePrefix}-${Date.now()}-${uuid()
 const diffedSourceDirRelPath = `${tempDirRelPath}/${diffedSourceDirName}`
 const diffedSourceDirPath = path.join(__dirname, diffedSourceDirRelPath)
 
-const typesDirRelPathFromSrc = STATICS_CONFIG.types_rel_path_from_src
-const typesInSourceCopyPath = path.join(fullSourceCopyDirPath, typesDirRelPathFromSrc)
-const typesInDiffedSourcePath = path.join(diffedSourceDirPath, typesDirRelPathFromSrc)
-
 const distDirRelPath = THIS_BUILD_CONFIG.build_output_rel_path
 const distDirPath = path.join(__dirname, distDirRelPath)
 
@@ -109,7 +105,7 @@ try {
     throw new Error(err)
   }
 
-  // Create first temp directory
+  // Create full source copy directory
   console.log(chalk.bold(`Creating ${fullSourceCopyDirRelPath}...`))
   try {
     const { err, stderr } = await execAsync(`mkdir -p ${fullSourceCopyDirPath}`)
@@ -121,7 +117,7 @@ try {
     throw new Error(err)
   }
 
-  // Create second temp directory
+  // Create diffed source directory
   console.log(chalk.bold(`Creating ${diffedSourceDirRelPath}...`))
   try {
     const { err, stderr } = await execAsync(`mkdir -p ${diffedSourceDirPath}`)
@@ -197,11 +193,33 @@ try {
     throw new Error(err)
   }
 
-  // Push types in diffedSource
-  console.log(chalk.bold(`Pushing types in diff in ${diffedSourceDirRelPath}...`))
+  // Push all typescript files
+  console.log(chalk.bold(`Pushing all TypeScript files in source in ${diffedSourceDirRelPath}...`))
   try {
-    await execAsync(`cp -r ${typesInSourceCopyPath} ${typesInDiffedSourcePath}`)
+    const tsFiles = (await deepLs(fullSourceCopyDirPath)).filter(filePath => path.extname(filePath) === '.ts')
+    for (const filePath of tsFiles) {
+      const relPath = path.relative(fullSourceCopyDirPath, filePath)
+      const relParentPath = relPath.split('/').slice(0, -1).join('/')
+      const { err } = await execAsync(`mkdir -p ${diffedSourceDirPath}/${relParentPath} && cp -r ${filePath} ${diffedSourceDirPath}/${relPath}`)
+      if (err !== null) {
+        console.log(chalk.bold.bgRed.white('Error while pushing ts file'))
+        console.log(chalk.grey(filePath))
+        throw new Error(err)
+      }
+    }
     console.log(chalk.grey('pushed.'))
+  } catch (err) {
+    console.log(err)
+    throw new Error(err)
+  }
+
+  // Push tsconfig file
+  console.log(chalk.bold(`Pushing tsconfig.json in diffed source...`))
+  try {
+    const { err, stderr } = await execAsync(`cp -r ${fullSourceCopyDirPath}/tsconfig.json ${diffedSourceDirPath}/tsconfig.json`)
+    if (err) throw new Error(err)
+    if (stderr) throw new Error(stderr)
+    console.log(chalk.grey(`pushed.`))
   } catch (err) {
     console.log(err)
     throw new Error(err)
@@ -212,6 +230,8 @@ try {
   try {
     const filePaths = await deepLs(diffedSourceDirPath)
     for (const filePath of filePaths) {
+      const fileRelPath = path.relative(diffedSourceDirPath, filePath)
+      console.log(chalk.grey(fileRelPath))
       const fileExt = path.extname(filePath)
       const shouldReplace = STATICS_CONFIG.templating_allowed_extensions.includes(fileExt)
       if (!shouldReplace) continue
@@ -266,7 +286,7 @@ try {
       if (newFileContent !== fileContent) await fse.writeFile(filePath, newFileContent)
     }
     
-    console.log(chalk.grey('replaced.'))
+    console.log(chalk.grey('\nreplaced.'))
   } catch (err) {
     console.log(err)
     throw new Error(err)
@@ -329,25 +349,32 @@ try {
   // Transpile Typescript (.ts) files
   console.log(chalk.bold('Transpiling Typescript files...'))
   try {
-    const filePaths = await deepLs(diffedSourceDirPath)
-    const tsFilesPaths = filePaths.filter(filePath => path.extname(filePath) === '.ts')
-    for (const filePath of tsFilesPaths) {
-      const outPath = filePath.replace(/\.ts$/gm, '.js')
-      const { stdout, stderr, err } = await execAsync(`tsc ${filePath} --outFile ${outPath} --target es2015 --sourceMap`)
-      if (err) {
-        console.log(chalk.bgRed('ERR:'))
-        console.log(chalk.red(err))
-      }
-      if (stderr) {
-        console.log(chalk.bgRed('STDERR:'))
-        console.log(chalk.red(err))
-      }
-      if (stdout) {
-        console.log(chalk.grey(stdout))
-      }
-      await fse.remove(filePath)
+    const { stdout, stderr, err } = await execAsync(`tsc --project ${diffedSourceDirPath}/tsconfig.json`)
+    if (err) {
+      console.log(chalk.bgRed('ERR:'))
+      console.log(chalk.red(err))
     }
+    if (stderr) {
+      console.log(chalk.bgRed('STDERR:'))
+      console.log(chalk.red(err))
+    }
+    if (stdout) {
+      console.log(chalk.grey(stdout))
+    }
+
     console.log(chalk.grey('transpiled.'))
+  } catch (err) {
+    console.log(err)
+    throw new Error(err)
+  }
+
+  // Delete all .ts files in diffed source
+  console.log(chalk.bold(`Deleting all TypeScript files in ${diffedSourceDirRelPath}...`))
+  try {
+    const { err, stderr } = await execAsync(`find ${diffedSourceDirPath}/ -maxdepth 100 -type f -name \"*.ts\" -delete`)
+    if (err) throw new Error(err)
+    if (stderr) throw new Error(stderr)
+    console.log(chalk.grey(`deleted.`))
   } catch (err) {
     console.log(err)
     throw new Error(err)
@@ -464,7 +491,7 @@ try {
     throw new Error(err)
   }
 
-  // Remove temp directory
+  // Remove source copy and diffed source directories
   console.log(chalk.bold(`Removing ${fullSourceCopyDirRelPath} and ${diffedSourceDirRelPath}...`))
   await cleanup(fullSourceCopyDirPath)
   await cleanup(diffedSourceDirPath)
