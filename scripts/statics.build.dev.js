@@ -75,13 +75,12 @@ async function handleProcessInterruption (reason, fullSourceCopyDirPath, diffedS
   console.log(chalk.grey('cleaned up after handling exception.'))
 }
 
-/* * * * * * * * * * * * * * * * * * * * * *
- *
- * BUILD PROCESS
- * 
- * * * * * * * * * * * * * * * * * * * * * */
 try {
-  // Create buildable reference directory if needed
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * CREATE PREV BUILDABLE SOURCE DIRECTORY IF NEEDED
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold(`Ensuring ${prevBuildableSourceDirRelPath} exists...`))
   try {
     const { err, stderr } = await execAsync(`mkdir -p ${prevBuildableSourceDirPath}`)
@@ -93,7 +92,11 @@ try {
     throw new Error(err)
   }
 
-  // Create built reference directory if needed
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * CREATE PREV BUILT OUTPUT DIRECTORY IF NEEDED
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold(`Ensuring ${prevBuiltOutputDirRelPath} exists...`))
   try {
     const { err, stderr } = await execAsync(`mkdir -p ${prevBuiltOutputDirPath}`)
@@ -105,7 +108,11 @@ try {
     throw new Error(err)
   }
 
-  // Create full source copy directory
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * CREATE FULL SOURCE COPY DIRECTORY IF NEEDED
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold(`Creating ${fullSourceCopyDirRelPath}...`))
   try {
     const { err, stderr } = await execAsync(`mkdir -p ${fullSourceCopyDirPath}`)
@@ -117,7 +124,11 @@ try {
     throw new Error(err)
   }
 
-  // Create diffed source directory
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * CREATE SOURCE DIFF DIRECTORY IF NEEDED
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold(`Creating ${diffedSourceDirRelPath}...`))
   try {
     const { err, stderr } = await execAsync(`mkdir -p ${diffedSourceDirPath}`)
@@ -129,7 +140,11 @@ try {
     throw new Error(err)
   }
 
-  // Create output directory if needed
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * CREATE DIST OUTPUT DIRECTORY IF NEEDED
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold(`Ensuring ${distDirRelPath} exists...`))
   try {
     const { err, stderr } = await execAsync(`mkdir -p ${distDirPath}`)
@@ -141,7 +156,11 @@ try {
     throw new Error(err)
   }
 
-  // Copy source in temp and delete all .DS_Store files
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * COPY SOURCE IN FULL SOURCE COPY DIRECTORY @ DELETE .DS_Store FILES
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold(`Copying source files to ${fullSourceCopyDirRelPath}, deleting all .DS_Store...`))
   try {
     const { err, stderr } = await execAsync(`cp -r ${srcDirPath}/ ${fullSourceCopyDirPath} && find ${fullSourceCopyDirPath}/ -maxdepth 100 -type f -name \".DS_Store\" -delete`)
@@ -153,11 +172,15 @@ try {
     throw new Error(err)
   }
 
-  // Push diff between source and prev build source in diffedSource
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * DIFF BTW SOURCE & PREV BUILDABLE AND PUSH IN DIFF FOLDER
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold(`Pushing diff in ${diffedSourceDirRelPath}...`))
-  console.log(`  from: ${fullSourceCopyDirRelPath}`)
-  console.log(`  and:  ${prevBuildableSourceDirRelPath}`)
-  console.log(`  to:   ${diffedSourceDirRelPath}`)
+  console.log(chalk.grey(`from: ${fullSourceCopyDirRelPath}`))
+  console.log(chalk.grey(`and:  ${prevBuildableSourceDirRelPath}`))
+  console.log(chalk.grey(`to:   ${diffedSourceDirRelPath}`))
   try {
     const res = await dircompare.compare(
       fullSourceCopyDirPath,
@@ -179,21 +202,24 @@ try {
       const dstDirectory = path.join(diffedSourceDirPath, changedDiff.relativePath)
       const dstPath = path.join(diffedSourceDirPath, relPath)
       const { err } = await execAsync(`mkdir -p ${dstDirectory} && cp ${srcPath} ${dstPath}`)
-      console.log(chalk.grey(relPath))
       if (err !== null) {
-        console.log(chalk.bold.bgRed.white('Error while pushing files'))
+        console.log(chalk.bold.bgRed.white('Error while pushing file'))
         console.log(chalk.grey(srcPath))
         console.log(err)
       }
     }
     
-    console.log(chalk.grey('pushed.'))
+    console.log(chalk.grey('\npushed.'))
   } catch (err) {
     console.log(err)
     throw new Error(err)
   }
 
-  // Push all typescript files
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * PUSH ALL .ts FILES IN SOURCE DIFF
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold(`Pushing all TypeScript files in source in ${diffedSourceDirRelPath}...`))
   try {
     const tsFiles = (await deepLs(fullSourceCopyDirPath)).filter(filePath => path.extname(filePath) === '.ts')
@@ -213,7 +239,11 @@ try {
     throw new Error(err)
   }
 
-  // Push tsconfig file
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * PUSH tsconfig.json in SOURCE DIFF
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold(`Pushing tsconfig.json in diffed source...`))
   try {
     const { err, stderr } = await execAsync(`cp -r ${fullSourceCopyDirPath}/tsconfig.json ${diffedSourceDirPath}/tsconfig.json`)
@@ -225,7 +255,69 @@ try {
     throw new Error(err)
   }
 
-  // Replacing templates in diff files
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * RESOLVE FILES IMPORTS AND ADD RESULTS IN SOURCE DIFF
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+  async function resolveImports (sourceFilePath) {
+    try {
+      const fileContent = await fse.readFile(sourceFilePath, 'utf-8')
+      const matchedImports = fileContent.match(/{{IMPORT:[^}]+}}/gm)
+      if (matchedImports === null) return []
+      const fileImportsAbsPaths = []
+      for (const matchedImport of matchedImports) {
+        const importPath = matchedImport
+          .replace(/^{{IMPORT:/, '')
+          .replace(/}}$/, '')
+          .trim()
+        const pathIsAbsolute = path.isAbsolute(importPath)
+        const absolutePath = pathIsAbsolute ? importPath : path.join(sourceFilePath, '../', importPath)
+        const importsOfImport = await resolveImports(absolutePath)
+        fileImportsAbsPaths.push(absolutePath, ...importsOfImport)
+      }
+      const dedupedFileImports = [...new Set(fileImportsAbsPaths)]
+      return dedupedFileImports
+    } catch (err) {
+      console.log('EEEERRRRRR')
+      console.log(err)
+      return []
+    }
+  }
+
+  console.log(chalk.bold(`Resolving file imports in diffed source...`))
+  try {
+    const diffFiles = await deepLs(diffedSourceDirPath)
+    const importedFilesSet = new Set()
+    for (const filePath of diffFiles) {
+      const fileRelPath = path.relative(diffedSourceDirPath, filePath)
+      const filePathInsource = path.join(fullSourceCopyDirPath, fileRelPath)
+      const resolvedImports = await resolveImports(filePathInsource)
+      resolvedImports.forEach(absPath => importedFilesSet.add(absPath))
+    }
+    
+    for (const importedFilePath of importedFilesSet) {
+      const relPath = path.relative(fullSourceCopyDirPath, importedFilePath)
+      console.log(chalk.grey(relPath))
+      const destPath = path.join(diffedSourceDirPath, relPath)
+      const destPathParent = destPath.split('/').slice(0, -1).join('/')
+      const { err, stderr } = await execAsync(`mkdir -p ${destPathParent} && cp ${importedFilePath} ${destPath}`)
+      if (err !== null) throw err
+      if (typeof stderr === 'string' && stderr.length > 0) throw stderr
+    }
+
+    console.log(chalk.grey(`\nresolved.`))
+  } catch (err) {
+    console.log(err)
+    throw new Error(err)
+  }
+
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * REPLACE TEMPLATES IN FILES TU BUILD
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold('Replacing templates in diff files...'))
   try {
     const filePaths = await deepLs(diffedSourceDirPath)
@@ -292,7 +384,11 @@ try {
     throw new Error(err)
   }
 
-  // Transforming README.md into README.html
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * CREATE README.html from README.md FILES
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold('Transforming README.md into README.html'))
   try {
     const filePaths = await deepLs(diffedSourceDirPath)
@@ -346,7 +442,11 @@ try {
     throw new Error(err)
   }
 
-  // Transpile Typescript (.ts) files
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * TRANSPILE TYPESCRIPT FILES
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold('Transpiling Typescript files...'))
   try {
     const { stdout, stderr, err } = await execAsync(`tsc --project ${diffedSourceDirPath}/tsconfig.json`)
@@ -368,7 +468,11 @@ try {
     throw new Error(err)
   }
 
-  // Delete all .ts files in diffed source
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * DELETE TYPESCRIPT FILES
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold(`Deleting all TypeScript files in ${diffedSourceDirRelPath}...`))
   try {
     const { err, stderr } = await execAsync(`find ${diffedSourceDirPath}/ -maxdepth 100 -type f -name \"*.ts\" -delete`)
@@ -380,7 +484,11 @@ try {
     throw new Error(err)
   }
 
-  // Uglify Javascript
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * UGLIFY JAVASCRIPT
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold('Uglifying Javascript files...'))
   try {
     const filePaths = await deepLs(diffedSourceDirPath)
@@ -392,12 +500,24 @@ try {
       const shouldSkip = skippedPaths.some(skippedPath => isPathInScope(filePath, skippedPath))
       if (shouldSkip) continue
       const fileContent = await fse.readFile(filePath, 'utf-8')
-      const uglified = uglifyJs.minify(fileContent).code
-      if (uglified === undefined) {
+      const fileName = path.basename(filePath)
+      const sourceMapName = `${fileName}.map`
+      const sourceMapPath = path.join(filePath, '../', sourceMapName)
+      const uglified = uglifyJs.minify(fileContent, { 
+        sourceMap: {
+          content: 'inline',
+          filename: fileName,
+          url: sourceMapName
+        }
+       })
+      const uglifiedCode = uglified.code + '\n'
+      const uglifiedMap = uglified.map
+      if (uglifiedCode === undefined) {
         console.log(chalk.red(`An error occured while uglifying ${path.relative(diffedSourceDirPath, filePath)}, skipping uglifying for this one...`))
         continue
       }
-      await fse.writeFile(filePath, uglified, { encoding: 'utf-8' })
+      await fse.writeFile(filePath, uglifiedCode, { encoding: 'utf-8' })
+      if (typeof uglifiedMap === 'string' && uglifiedMap.length > 0) await fse.writeFile(sourceMapPath, uglifiedMap, { encoding: 'utf-8' })
     }
     console.log(chalk.grey('uglified.'))
   } catch (err) {
@@ -406,7 +526,11 @@ try {
   }
 
 
-  // Compile SASS
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * COMPILE SASS
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold('Compiling SCSS files...'))
   try {
     const filePaths = await deepLs(diffedSourceDirPath)
@@ -424,7 +548,11 @@ try {
     throw new Error(err)
   }
 
-  // Minify CSS
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * MINIFY CSS
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold('Minifying CSS files...'))
   try {
     const filePaths = await deepLs(diffedSourceDirPath)
@@ -440,7 +568,11 @@ try {
     throw new Error(err)
   }
 
-  // Rsync diff to dist
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * RSYNC DIFF TO DIST (FINAL OUTPUT)
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold(`Rsync ${diffedSourceDirRelPath} to ${distDirRelPath}`))
   try {
     await execAsync(`rsync --archive --verbose ${diffedSourceDirPath}/ ${distDirPath}`)
@@ -450,7 +582,11 @@ try {
     throw new Error(err)
   }
 
-  // Create aliases
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * CREATE ALIASES
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold(`Creating aliases in ${distDirRelPath}`))
   try {
     const { aliases } = THIS_BUILD_CONFIG
@@ -480,10 +616,14 @@ try {
     throw new Error(err)
   }
 
-  // Update source reference and build reference
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * UPDATE SOURCE REFERENCE AND BUILD REFERENCE
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold(`Updating contents of ${prevBuildableSourceDirRelPath} and ${prevBuiltOutputDirRelPath}...`))
   try {
-    await execAsync(`rm -rf ${prevBuildableSourceDirPath} && mv ${fullSourceCopyDirPath} ${prevBuildableSourceDirPath}`)
+    await execAsync(`rm -rf ${prevBuildableSourceDirPath} && cp -r ${fullSourceCopyDirPath} ${prevBuildableSourceDirPath}`)
     await execAsync(`rm -rf ${prevBuiltOutputDirPath} && cp -r ${distDirPath} ${prevBuiltOutputDirPath}`)
     console.log(chalk.grey('updated.'))
   } catch (err) {
@@ -491,13 +631,21 @@ try {
     throw new Error(err)
   }
 
-  // Remove source copy and diffed source directories
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * REMOVE TEMP DIRECTORIES
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bold(`Removing ${fullSourceCopyDirRelPath} and ${diffedSourceDirRelPath}...`))
   await cleanup(fullSourceCopyDirPath)
   await cleanup(diffedSourceDirPath)
   console.log(chalk.grey(`removed.`))
 
-  // Done
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * DONE
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
   console.log(chalk.bgGreen.bold(`Built in ${(Date.now() - startTime) / 1000} seconds.`))
 
 } catch (err) {
