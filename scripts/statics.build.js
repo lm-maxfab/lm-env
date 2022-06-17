@@ -24,9 +24,14 @@ import MASTER_CONFIG from '../build.config.js'
 const startTime = Date.now()
 
 const STATICS_CONFIG = MASTER_CONFIG.statics
-const THIS_BUILD_CONFIG = STATICS_CONFIG.builds.find(conf => conf.name === 'dev')
+
+const buildName = process.argv[2]
+const THIS_BUILD_CONFIG = STATICS_CONFIG.builds.find(conf => conf.name === buildName)
+if (THIS_BUILD_CONFIG === undefined) throw new Error(`No config found for a build named ${buildName}`)
 
 const __dirname = process.cwd()
+
+const rootUrl = THIS_BUILD_CONFIG.root_url
 
 const tempDirRelPath = MASTER_CONFIG.temp.rel_path
 
@@ -40,6 +45,8 @@ const prevBuildableSourceDirPath = path.join(__dirname, prevBuildableSourceDirRe
 const prevBuiltOutputDirName = THIS_BUILD_CONFIG.temp_build_reference_dir_name
 const prevBuiltOutputDirRelPath = `${tempDirRelPath}/${prevBuiltOutputDirName}`
 const prevBuiltOutputDirPath = path.join(__dirname, prevBuiltOutputDirRelPath)
+
+const buildSkipRelPaths = THIS_BUILD_CONFIG.build_skip_paths
 
 const fullSourceCopyDirNamePrefix = THIS_BUILD_CONFIG.temp_source_copy_dir_name_prefix
 const fullSourceCopyDirName = `${fullSourceCopyDirNamePrefix}-${Date.now()}-${uuid().replace(/-[a-f0-9-]*$/igm, '')}`
@@ -164,6 +171,10 @@ try {
   console.log(chalk.bold(`Copying source files to ${fullSourceCopyDirRelPath}, deleting all .DS_Store...`))
   try {
     const { err, stderr } = await execAsync(`cp -r ${srcDirPath}/ ${fullSourceCopyDirPath} && find ${fullSourceCopyDirPath}/ -maxdepth 100 -type f -name \".DS_Store\" -delete`)
+    for (const skippedRelPath of buildSkipRelPaths) {
+      const skippedPath = path.join(fullSourceCopyDirPath, skippedRelPath)
+      await execAsync(`rm -rf ${skippedPath}`)
+    }
     if (err) throw new Error(err)
     if (stderr) throw new Error(stderr)
     console.log(chalk.grey(`copied and cleaned.`))
@@ -363,7 +374,6 @@ try {
       }
 
       // {{ROOT_URL}}
-      const rootUrl =  THIS_BUILD_CONFIG.root_url
       const rootUrlTemplateRegexp = new RegExp(STATICS_CONFIG.root_url_template, 'gm')
       newFileContent = newFileContent.replace(rootUrlTemplateRegexp, rootUrl)
       
@@ -424,7 +434,7 @@ try {
           p { font-family: "The-Antiqua-B"; }
         </style>
         ${THIS_BUILD_CONFIG.readme_markdown_html_stylesheets_paths.map(cssPath => {
-          return `<link rel="stylesheet" href="${cssPath}">`
+          return `<link rel="stylesheet" href="${rootUrl}/${cssPath}">`
         }).join('')}`
       $htmlJsdom.window.document.body.classList.add('lm-page')
       const newHtmlContent = $htmlJsdom.window.document.documentElement.outerHTML
@@ -608,9 +618,10 @@ try {
         continue
       }
       await execAsync(`cp ${from} ${to}`)
+      console.log(chalk.grey(`${relFrom} → ${relTo}`))
     }
 
-    console.log(chalk.grey('created.'))
+    console.log(chalk.grey('\ncreated.'))
   } catch (err) {
     console.log(err)
     throw new Error(err)

@@ -4,7 +4,9 @@ import MASTER_CONFIG from '../build.config.js'
 import execAsync from './utils/exec-async/index.js'
 
 const STATICS_CONFIG = MASTER_CONFIG.statics
-const THIS_BUILD_CONFIG = STATICS_CONFIG.builds.find(conf => conf.name === 'prod')
+const buildName = process.argv[2]
+const THIS_BUILD_CONFIG = STATICS_CONFIG.builds.find(conf => conf.name === buildName)
+if (THIS_BUILD_CONFIG === undefined) throw new Error(`No config found for a build named ${buildName}`)
 
 const __dirname = process.cwd()
 

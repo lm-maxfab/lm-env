@@ -3,7 +3,9 @@ import { spawn } from 'child_process'
 import MASTER_CONFIG from '../build.config.js'
 
 const STATICS_CONFIG = MASTER_CONFIG.statics
-const THIS_BUILD_CONFIG = STATICS_CONFIG.builds.find(build => build.name === 'dev')
+const buildName = process.argv[2]
+const THIS_BUILD_CONFIG = STATICS_CONFIG.builds.find(conf => conf.name === buildName)
+if (THIS_BUILD_CONFIG === undefined) throw new Error(`No config found for a build named ${buildName}`)
 
 const __dirname = process.cwd()
 const distDirRelPath = THIS_BUILD_CONFIG.build_output_rel_path
