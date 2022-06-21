@@ -61,6 +61,8 @@ const diffedSourceDirPath = path.join(__dirname, diffedSourceDirRelPath)
 const distDirRelPath = THIS_BUILD_CONFIG.build_output_rel_path
 const distDirPath = path.join(__dirname, distDirRelPath)
 
+const removeAfterBuildRelPaths = THIS_BUILD_CONFIG.remove_after_build_paths
+
 async function cleanup (path) {
   await execAsync(`rm -rf ${path}`)
 }
@@ -171,13 +173,15 @@ try {
   console.log(chalk.bold(`Copying source files to ${fullSourceCopyDirRelPath}, deleting all .DS_Store...`))
   try {
     const { err, stderr } = await execAsync(`cp -r ${srcDirPath}/ ${fullSourceCopyDirPath} && find ${fullSourceCopyDirPath}/ -maxdepth 100 -type f -name \".DS_Store\" -delete`)
+    if (buildSkipRelPaths.length > 0) console.log(chalk.grey('skipping files for build:'))
     for (const skippedRelPath of buildSkipRelPaths) {
       const skippedPath = path.join(fullSourceCopyDirPath, skippedRelPath)
+      console.log(chalk.grey(skippedRelPath))
       await execAsync(`rm -rf ${skippedPath}`)
     }
     if (err) throw new Error(err)
     if (stderr) throw new Error(stderr)
-    console.log(chalk.grey(`copied and cleaned.`))
+    console.log(chalk.grey(`\ncopied and cleaned.`))
   } catch (err) {
     console.log(err)
     throw new Error(err)
@@ -573,6 +577,24 @@ try {
       await fse.writeFile(filePath, minified.styles, 'utf-8')
     }
     console.log(chalk.grey('minified.'))
+  } catch (err) {
+    console.log(err)
+    throw new Error(err)
+  }
+
+  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   *
+   * REMOVE UNNECESSARY FILES AFTER BUILD
+   * 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+  console.log(chalk.bold(`Removing unused files after build...`))
+  try {
+    for (const removeAfterBuildPath of removeAfterBuildRelPaths) {
+      const removedPath = path.join(diffedSourceDirRelPath, removeAfterBuildPath)
+      await execAsync(`rm -rf ${removedPath}`)
+      console.log(chalk.grey(removeAfterBuildPath))
+    }
+    console.log(chalk.grey('\nremoved.'))
   } catch (err) {
     console.log(err)
     throw new Error(err)

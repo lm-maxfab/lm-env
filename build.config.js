@@ -72,7 +72,12 @@ const staticsConfig = {
     build_watched_extensions: allExtensions,
     build_skip_paths: [
       '.git',
-      '/.legacy'
+      '.gitignore',
+      '/.legacy',
+      '/components/some-htm-comp'
+    ],
+    remove_after_build_paths: [
+      '/tsconfig.json'
     ],
     js_uglification_skip_paths: [
       '/lib',
@@ -105,7 +110,12 @@ const staticsConfig = {
     build_watched_extensions: allExtensions,
     build_skip_paths: [
       '.git',
-      '/.legacy'
+      '.gitignore',
+      '/.legacy',
+      '/components/some-htm-comp'
+    ],
+    remove_after_build_paths: [
+      '/tsconfig.json'
     ],
     js_uglification_skip_paths: [
       '/lib',
