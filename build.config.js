@@ -24,7 +24,7 @@ const envConfig = {
   src_rel_path: 'src',
   builds: [{
     name: 'dev',
-    local_server_port: '3000',
+    local_server_port: '50000',
     temp_source_copy_dir_name_prefix: 'env-dev-source-copy',
     build_output_rel_path: 'dist/dev/env',
     source_watched_extensions: allExtensions,
@@ -47,8 +47,8 @@ const staticsConfig = {
   ],
   builds: [{
     name: 'dev',
-    local_server_port: '3001',
-    root_url: 'http://localhost:3001',
+    local_server_port: '50001',
+    root_url: 'http://localhost:50001',
     build_output_rel_path: 'dist/dev/statics',
     temp_source_copy_dir_name_prefix: 'statics-dev-source-copy',
     temp_source_reference_dir_name: 'statics-dev-source-reference',
@@ -85,7 +85,7 @@ const staticsConfig = {
     ]
   }, {
     name: 'prod',
-    local_server_port: '3001',
+    local_server_port: '50001',
     root_url: 'https://assets-decodeurs.lemonde.fr/redacweb/statics-v2',
     build_output_rel_path: 'dist/prod/statics',
     temp_source_copy_dir_name_prefix: 'statics-prod-source-copy',
