@@ -7,9 +7,9 @@ export const devConfig = {
   node_env: nodeEnv,
   root_path: rootPath,
   app_path: path.join(rootPath, 'dist/dev/env'),
-  allowed_origins: ['http://localhost:3000'],
+  allowed_origins: ['http://localhost:50000'],
   public_hostname: 'localhost',
-  app_port: parseInt(process.env.PORT || '3000')
+  app_port: parseInt(process.env.PORT || '50000')
 }
 
 export const prodConfig = {
