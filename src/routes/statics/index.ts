@@ -5,7 +5,7 @@ const router = express.Router()
 
 /* GET home page. */
 router.get('*', async (req, res) => {
-  const baseUrl = 'http://localhost:3001'
+  const baseUrl = 'http://localhost:50001'
   const resourceUrl = req.url.replace(/^\//gm, '')
   const targetUrl = `${baseUrl}/${resourceUrl}`
   try {
